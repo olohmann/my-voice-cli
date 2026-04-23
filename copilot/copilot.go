@@ -17,7 +17,8 @@ func Generate(ctx context.Context, systemPrompt, userInput, model string) (strin
 	defer client.Stop()
 
 	session, err := client.CreateSession(ctx, &sdk.SessionConfig{
-		Model: model,
+		OnPermissionRequest: sdk.PermissionHandler.ApproveAll,
+		Model:               model,
 		SystemMessage: &sdk.SystemMessageConfig{
 			Mode:    "replace",
 			Content: systemPrompt,
