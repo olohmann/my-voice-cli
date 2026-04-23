@@ -3,6 +3,7 @@ module github.com/olohmann/my-voice-cli
 go 1.26.1
 
 require (
+	github.com/BurntSushi/toml v1.6.0 // indirect
 	github.com/github/copilot-sdk/go v0.2.2 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect

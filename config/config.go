@@ -6,8 +6,67 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/BurntSushi/toml"
 	"github.com/olohmann/my-voice-cli/profiles"
 )
+
+// AppConfig holds persistent settings loaded from config.toml.
+type AppConfig struct {
+	Model  string `toml:"model"`
+	Tone   string `toml:"tone"`
+	Format string `toml:"format"`
+}
+
+// DefaultConfig returns hardcoded defaults.
+func DefaultConfig() AppConfig {
+	return AppConfig{
+		Model:  "gpt-4.1",
+		Tone:   "formal",
+		Format: "mail",
+	}
+}
+
+// LoadConfig reads config.toml from the config directory.
+// Missing file is not an error — defaults are returned.
+func LoadConfig(configDir string) (AppConfig, error) {
+	cfg := DefaultConfig()
+	path := filepath.Join(configDir, "config.toml")
+
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		return cfg, nil
+	}
+
+	if _, err := toml.DecodeFile(path, &cfg); err != nil {
+		return cfg, fmt.Errorf("reading config.toml: %w", err)
+	}
+
+	// Fill in any missing fields with defaults
+	defaults := DefaultConfig()
+	if cfg.Model == "" {
+		cfg.Model = defaults.Model
+	}
+	if cfg.Tone == "" {
+		cfg.Tone = defaults.Tone
+	}
+	if cfg.Format == "" {
+		cfg.Format = defaults.Format
+	}
+
+	return cfg, nil
+}
+
+const defaultConfigTOML = `# my-voice configuration
+# CLI flags override these defaults.
+
+# Default LLM model
+model = "gpt-4.1"
+
+# Default tone: "formal" or "casual"
+tone = "formal"
+
+# Default format: "mail" or "chat"
+format = "mail"
+`
 
 const appName = "my-voice"
 
@@ -90,9 +149,25 @@ func ListProfiles(configDir string) ([]string, error) {
 	return result, nil
 }
 
-// InitProfiles writes embedded default profiles to the user's config directory.
+// Init writes default config.toml and profile files to the user's config directory.
 // Existing files are not overwritten.
-func InitProfiles(configDir string) error {
+func Init(configDir string) error {
+	if err := os.MkdirAll(configDir, 0o755); err != nil {
+		return fmt.Errorf("creating config directory: %w", err)
+	}
+
+	// Write config.toml
+	configPath := filepath.Join(configDir, "config.toml")
+	if _, err := os.Stat(configPath); os.IsNotExist(err) {
+		if err := os.WriteFile(configPath, []byte(defaultConfigTOML), 0o644); err != nil {
+			return fmt.Errorf("writing config.toml: %w", err)
+		}
+		fmt.Fprintf(os.Stderr, "  created: config.toml\n")
+	} else {
+		fmt.Fprintf(os.Stderr, "  skip: config.toml (already exists)\n")
+	}
+
+	// Write profile files
 	dir := ProfilesDir(configDir)
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return fmt.Errorf("creating profiles directory: %w", err)

@@ -24,8 +24,8 @@ func main() {
 
 	// Other flags
 	profileDir := flag.String("profile-dir", "", "Override config directory")
-	initProfiles := flag.Bool("init", false, "Initialize default profile files in config dir")
-	model := flag.String("model", "gpt-4.1", "LLM model to use")
+	initCmd := flag.Bool("init", false, "Initialize default config and profile files")
+	model := flag.String("model", "", "LLM model to use (overrides config.toml)")
 	list := flag.Bool("list", false, "List available profiles")
 
 	flag.Usage = func() {
@@ -41,10 +41,17 @@ func main() {
 
 	configDir := config.ConfigDir(*profileDir)
 
+	// Load persistent config (config.toml)
+	cfg, err := config.LoadConfig(configDir)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Warning: %v (using defaults)\n", err)
+		cfg = config.DefaultConfig()
+	}
+
 	// Handle --init
-	if *initProfiles {
-		fmt.Fprintf(os.Stderr, "Initializing profiles in %s\n", config.ProfilesDir(configDir))
-		if err := config.InitProfiles(configDir); err != nil {
+	if *initCmd {
+		fmt.Fprintf(os.Stderr, "Initializing config in %s\n", configDir)
+		if err := config.Init(configDir); err != nil {
 			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 			os.Exit(1)
 		}
@@ -66,24 +73,34 @@ func main() {
 		return
 	}
 
-	// Resolve tone
-	tone := "formal"
+	// Resolve tone: CLI flags override config.toml
 	if *formal && *casual {
 		fmt.Fprintf(os.Stderr, "Error: --formal and --casual are mutually exclusive\n")
 		os.Exit(1)
 	}
-	if *casual {
+	tone := cfg.Tone
+	if *formal {
+		tone = "formal"
+	} else if *casual {
 		tone = "casual"
 	}
 
-	// Resolve format
-	format := "mail"
+	// Resolve format: CLI flags override config.toml
 	if *mail && *chat {
 		fmt.Fprintf(os.Stderr, "Error: --mail and --chat are mutually exclusive\n")
 		os.Exit(1)
 	}
-	if *chat {
+	format := cfg.Format
+	if *mail {
+		format = "mail"
+	} else if *chat {
 		format = "chat"
+	}
+
+	// Resolve model: CLI flag overrides config.toml
+	activeModel := cfg.Model
+	if *model != "" {
+		activeModel = *model
 	}
 
 	// Read stdin
@@ -118,7 +135,7 @@ func main() {
 	}()
 
 	// Generate response
-	response, err := copilot.Generate(ctx, systemPrompt, userInput, *model)
+	response, err := copilot.Generate(ctx, systemPrompt, userInput, activeModel)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(1)

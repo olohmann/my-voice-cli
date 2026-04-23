@@ -32,19 +32,35 @@ echo "thank Sarah for the code review" | my-voice --mail --casual
 
 ## Configuration
 
-Profiles are stored in `~/.config/my-voice/profiles/` as markdown files. Each file is a system prompt that instructs the LLM how to rewrite your input.
+Settings are stored in `~/.config/my-voice/` (respects `XDG_CONFIG_HOME`).
 
-### Initialize default profiles
+### Initialize config and profiles
 
 ```bash
 my-voice --init
 ```
 
-This creates 4 default profiles:
-- `formal-mail.md` — Professional email style
-- `formal-chat.md` — Professional chat message style
-- `casual-mail.md` — Friendly, conversational email style
-- `casual-chat.md` — Informal chat message style
+This creates:
+- `config.toml` — Persistent defaults for model, tone, and format
+- `profiles/formal-mail.md` — Professional email style
+- `profiles/formal-chat.md` — Professional chat message style
+- `profiles/casual-mail.md` — Friendly, conversational email style
+- `profiles/casual-chat.md` — Informal chat message style
+
+### config.toml
+
+```toml
+# Default LLM model
+model = "gpt-4.1"
+
+# Default tone: "formal" or "casual"
+tone = "formal"
+
+# Default format: "mail" or "chat"
+format = "mail"
+```
+
+CLI flags always override config.toml values. If no config file exists, hardcoded defaults are used (`formal`, `mail`, `gpt-4.1`).
 
 ### Customize profiles
 
@@ -65,8 +81,8 @@ my-voice --list
 | `--mail` | Output as email (default) |
 | `--chat` | Output as chat message |
 | `--profile-dir` | Override config directory |
-| `--init` | Initialize default profile files |
-| `--model` | LLM model to use (default: gpt-4.1) |
+| `--init` | Initialize default config and profile files |
+| `--model` | LLM model to use (overrides config.toml) |
 | `--list` | List available profiles |
 
 ## Prerequisites
