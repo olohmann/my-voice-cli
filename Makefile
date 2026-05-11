@@ -10,7 +10,7 @@ build:
 
 install: build
 	install -d $(BINDIR)
-	install -m 755 $(BINARY) $(BINDIR)/$(BINARY)
+	ln -sf $(abspath $(BINARY)) $(BINDIR)/$(BINARY)
 
 uninstall:
 	rm -f $(BINDIR)/$(BINARY)

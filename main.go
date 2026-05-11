@@ -2,15 +2,17 @@ package main
 
 import (
 	"context"
-	"flag"
 	"fmt"
 	"io"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 
 	"github.com/olohmann/my-voice-cli/config"
 	"github.com/olohmann/my-voice-cli/copilot"
+	flag "github.com/spf13/pflag"
+	"golang.org/x/term"
 )
 
 func main() {
@@ -103,14 +105,76 @@ func main() {
 		activeModel = *model
 	}
 
+	// Set up context with signal handling early so Ctrl-C works during input
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
+	go func() {
+		<-sigChan
+		cancel()
+		os.Exit(130)
+	}()
+
 	// Read stdin
-	input, err := io.ReadAll(os.Stdin)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error reading stdin: %v\n", err)
-		os.Exit(1)
+	var userInput string
+	stat, _ := os.Stdin.Stat()
+	if stat.Mode()&os.ModeCharDevice != 0 {
+		// Interactive: raw terminal mode for reliable Ctrl-D handling
+		fd := int(os.Stdin.Fd())
+		oldState, err := term.MakeRaw(fd)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error: cannot set raw terminal mode: %v\n", err)
+			os.Exit(1)
+		}
+		defer term.Restore(fd, oldState)
+
+		fmt.Fprint(os.Stderr, "Enter your text (Ctrl-D to send, Ctrl-C to cancel):\r\n")
+
+		var buf []byte
+		b := make([]byte, 1)
+		for {
+			n, err := os.Stdin.Read(b)
+			if n == 0 || err != nil {
+				break
+			}
+			switch b[0] {
+			case 4: // Ctrl-D — submit
+				fmt.Fprint(os.Stderr, "\r\n")
+				goto done
+			case 3: // Ctrl-C — cancel
+				term.Restore(fd, oldState)
+				fmt.Fprint(os.Stderr, "\r\n")
+				os.Exit(130)
+			case 13: // Enter (CR in raw mode)
+				buf = append(buf, '\n')
+				fmt.Fprint(os.Stderr, "\r\n")
+			case 127, 8: // Backspace / Delete
+				if len(buf) > 0 {
+					buf = buf[:len(buf)-1]
+					fmt.Fprint(os.Stderr, "\b \b")
+				}
+			default:
+				if b[0] >= 32 { // printable chars
+					buf = append(buf, b[0])
+					os.Stderr.Write(b[:1])
+				}
+			}
+		}
+	done:
+		term.Restore(fd, oldState)
+		userInput = string(buf)
+		fmt.Fprintln(os.Stderr, "Processing...")
+	} else {
+		input, err := io.ReadAll(os.Stdin)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error reading stdin: %v\n", err)
+			os.Exit(1)
+		}
+		userInput = string(input)
 	}
-	userInput := string(input)
-	if len(userInput) == 0 {
+	if len(strings.TrimSpace(userInput)) == 0 {
 		fmt.Fprintf(os.Stderr, "Error: no input provided. Pipe text to stdin.\n")
 		flag.Usage()
 		os.Exit(1)
@@ -122,17 +186,6 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Error loading profile: %v\n", err)
 		os.Exit(1)
 	}
-
-	// Set up context with signal handling
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
-	go func() {
-		<-sigChan
-		cancel()
-	}()
 
 	// Generate response
 	response, err := copilot.Generate(ctx, systemPrompt, userInput, activeModel)
