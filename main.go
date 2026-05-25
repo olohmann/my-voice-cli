@@ -11,6 +11,7 @@ import (
 
 	"github.com/olohmann/my-voice-cli/config"
 	"github.com/olohmann/my-voice-cli/copilot"
+	"github.com/olohmann/my-voice-cli/spinner"
 	flag "github.com/spf13/pflag"
 	"golang.org/x/term"
 )
@@ -188,7 +189,9 @@ func main() {
 	}
 
 	// Generate response
+	stop := spinner.Start("Thinking...")
 	response, err := copilot.Generate(ctx, systemPrompt, userInput, activeModel)
+	stop()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(1)
