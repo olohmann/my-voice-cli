@@ -72,7 +72,7 @@ Creates `config.toml` and four default profile files in `~/.config/my-voice/` (r
 
 ```toml
 # Default LLM model
-model = "gpt-4.1"
+model = "gpt-5.6-luna"
 
 # Default tone: "formal" or "casual"
 tone = "formal"

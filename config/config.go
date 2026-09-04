@@ -20,7 +20,7 @@ type AppConfig struct {
 // DefaultConfig returns hardcoded defaults.
 func DefaultConfig() AppConfig {
 	return AppConfig{
-		Model:  "gpt-4.1",
+		Model:  "gpt-5.6-luna",
 		Tone:   "formal",
 		Format: "mail",
 	}
@@ -59,7 +59,7 @@ const defaultConfigTOML = `# my-voice configuration
 # CLI flags override these defaults.
 
 # Default LLM model
-model = "gpt-4.1"
+model = "gpt-5.6-luna"
 
 # Default tone: "formal" or "casual"
 tone = "formal"

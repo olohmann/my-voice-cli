@@ -51,7 +51,7 @@ This creates:
 
 ```toml
 # Default LLM model
-model = "gpt-4.1"
+model = "gpt-5.6-luna"
 
 # Default tone: "formal" or "casual"
 tone = "formal"
@@ -60,7 +60,7 @@ tone = "formal"
 format = "mail"
 ```
 
-CLI flags always override config.toml values. If no config file exists, hardcoded defaults are used (`formal`, `mail`, `gpt-4.1`).
+CLI flags always override config.toml values. If no config file exists, hardcoded defaults are used (`formal`, `mail`, `gpt-5.6-luna`).
 
 ### Customize profiles
 
