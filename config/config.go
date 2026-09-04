@@ -5,6 +5,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/BurntSushi/toml"
 	"github.com/olohmann/my-voice-cli/profiles"
@@ -12,17 +13,19 @@ import (
 
 // AppConfig holds persistent settings loaded from config.toml.
 type AppConfig struct {
-	Model  string `toml:"model"`
-	Tone   string `toml:"tone"`
-	Format string `toml:"format"`
+	Model           string `toml:"model"`
+	ReasoningEffort string `toml:"reasoning_effort"`
+	Tone            string `toml:"tone"`
+	Format          string `toml:"format"`
 }
 
 // DefaultConfig returns hardcoded defaults.
 func DefaultConfig() AppConfig {
 	return AppConfig{
-		Model:  "gpt-5.6-luna",
-		Tone:   "formal",
-		Format: "mail",
+		Model:           "gpt-5.6-luna",
+		ReasoningEffort: "low",
+		Tone:            "formal",
+		Format:          "mail",
 	}
 }
 
@@ -45,6 +48,9 @@ func LoadConfig(configDir string) (AppConfig, error) {
 	if cfg.Model == "" {
 		cfg.Model = defaults.Model
 	}
+	if cfg.ReasoningEffort == "" {
+		cfg.ReasoningEffort = defaults.ReasoningEffort
+	}
 	if cfg.Tone == "" {
 		cfg.Tone = defaults.Tone
 	}
@@ -61,6 +67,9 @@ const defaultConfigTOML = `# my-voice configuration
 # Default LLM model
 model = "gpt-5.6-luna"
 
+# Reasoning effort: "none", "minimal", "low", "medium", "high", "xhigh", or "max"
+reasoning_effort = "low"
+
 # Default tone: "formal" or "casual"
 tone = "formal"
 
@@ -69,6 +78,25 @@ format = "mail"
 `
 
 const appName = "my-voice"
+
+var reasoningEfforts = map[string]bool{
+	"none":    true,
+	"minimal": true,
+	"low":     true,
+	"medium":  true,
+	"high":    true,
+	"xhigh":   true,
+	"max":     true,
+}
+
+// ValidateReasoningEffort validates and normalizes a Copilot reasoning effort.
+func ValidateReasoningEffort(value string) (string, error) {
+	value = strings.ToLower(strings.TrimSpace(value))
+	if !reasoningEfforts[value] {
+		return "", fmt.Errorf("invalid reasoning effort %q (expected none, minimal, low, medium, high, xhigh, or max)", value)
+	}
+	return value, nil
+}
 
 // ProfileKey returns the filename (without extension) for the given tone and format.
 func ProfileKey(tone, format string) string {

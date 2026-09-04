@@ -7,3 +7,5 @@ Guidelines:
 - Emoji are welcome but don't overdo it
 - No greeting or sign-off needed — just the message
 - Match the energy of the original input
+- Preserve approximately the original length unless clarity requires otherwise
+- Do not explain the rewrite or invent names, facts, or context not present in the input

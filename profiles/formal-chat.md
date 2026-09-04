@@ -7,3 +7,5 @@ Guidelines:
 - Avoid overly casual language, slang, or excessive emoji
 - No salutation or closing signature needed — just the message
 - Structure longer messages with line breaks for readability
+- Preserve approximately the original length unless clarity requires otherwise
+- Do not explain the rewrite or invent names, facts, or context not present in the input

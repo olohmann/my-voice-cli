@@ -8,3 +8,5 @@ Guidelines:
 - Only output the email body — no subject line, no metadata
 - If the user mentions a recipient name, address them directly
 - Keep the message concise but thorough
+- Preserve approximately the original length unless clarity requires otherwise
+- Do not explain the rewrite or invent names, facts, or context not present in the input

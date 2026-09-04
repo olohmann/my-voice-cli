@@ -1,6 +1,6 @@
 ---
 name: using-my-voice-cli
-description: "Rewrites text in a configured voice using the my-voice CLI. Covers installation, CLI flags (--formal/--casual, --mail/--chat, --model, --init, --list), configuration via config.toml and custom profiles, and piping input via stdin. Use when asking how to rewrite text as emails or chat messages in different tones, configure my-voice profiles, or troubleshoot my-voice CLI usage."
+description: "Rewrites text in a configured voice using the my-voice CLI. Covers installation, CLI flags, managed runtime commands, reasoning effort, configuration via config.toml and custom profiles, and piping input via stdin. Use when asking how to rewrite text as emails or chat messages in different tones, configure my-voice profiles, or troubleshoot my-voice CLI usage."
 ---
 
 # Using my-voice CLI
@@ -52,6 +52,9 @@ my-voice --chat --casual
 | `--mail` | Output as email (default) |
 | `--chat` | Output as chat message |
 | `--model` | LLM model to use (overrides config.toml) |
+| `--reasoning-effort` | Reasoning effort to use (overrides config.toml) |
+| `--direct` | Bypass the managed runtime |
+| `--timings` | Print lifecycle timing diagnostics to stderr |
 | `--profile-dir` | Override config directory |
 | `--init` | Initialize default config and profile files |
 | `--list` | List available profiles |
@@ -74,6 +77,9 @@ Creates `config.toml` and four default profile files in `~/.config/my-voice/` (r
 # Default LLM model
 model = "gpt-5.6-luna"
 
+# Reasoning effort: "none", "minimal", "low", "medium", "high", "xhigh", or "max"
+reasoning_effort = "low"
+
 # Default tone: "formal" or "casual"
 tone = "formal"
 
@@ -82,6 +88,18 @@ format = "mail"
 ```
 
 CLI flags always override config.toml values.
+
+## Managed runtime
+
+`my-voice` automatically starts and reuses a local Copilot runtime for faster repeated invocations. Sessions are unique, expose no tools or ambient context, and are permanently deleted after each rewrite.
+
+```bash
+my-voice runtime start
+my-voice runtime status
+my-voice runtime stop
+```
+
+Use `--direct` to force a one-shot runtime. Terminal output streams incrementally; redirected output stays buffered and atomic.
 
 ### Custom profiles
 

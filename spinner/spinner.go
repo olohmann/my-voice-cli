@@ -2,6 +2,7 @@ package spinner
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"sync"
 	"time"
@@ -18,28 +19,33 @@ func Start(message string) func() {
 	if !term.IsTerminal(int(os.Stderr.Fd())) {
 		return func() {}
 	}
+	return start(os.Stderr, message, 80*time.Millisecond)
+}
 
+func start(output io.Writer, message string, interval time.Duration) func() {
 	var once sync.Once
 	done := make(chan struct{})
+	cleared := make(chan struct{})
 
 	go func() {
+		defer close(cleared)
+		ticker := time.NewTicker(interval)
+		defer ticker.Stop()
 		i := 0
 		for {
 			select {
 			case <-done:
-				fmt.Fprintf(os.Stderr, "\r\033[K")
+				fmt.Fprintf(output, "\r\033[K")
 				return
-			default:
-				fmt.Fprintf(os.Stderr, "\r%s %s", frames[i%len(frames)], message)
+			case <-ticker.C:
+				fmt.Fprintf(output, "\r%s %s", frames[i%len(frames)], message)
 				i++
-				time.Sleep(80 * time.Millisecond)
 			}
 		}
 	}()
 
 	return func() {
 		once.Do(func() { close(done) })
-		// Brief pause to let goroutine clear the line.
-		time.Sleep(100 * time.Millisecond)
+		<-cleared
 	}
 }
